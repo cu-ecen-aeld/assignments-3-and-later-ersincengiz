@@ -16,8 +16,18 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+   int exitStatus = system(cmd);
+    if (exitStatus != 0) 
+    {
+        return false;
+    } 
+    else 
+    {
+       
+     return true;
+        
+    }
+    
 }
 
 /**
@@ -40,9 +50,11 @@ bool do_exec(int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+   
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -58,6 +70,47 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+
+    pid_t pid = fork();
+    
+    if (pid == -1) 
+    {
+        perror("fork");
+        return false;
+    }
+    
+    if (pid == 0) 
+    {
+    	printf("Child Process : True\n");
+        // Child process
+   
+
+        if(execv(command[0] , command)== -1)
+        {
+        perror(command[0]);
+	exit(1);
+	}		
+ 
+    }
+    else 
+    {
+        // Parent process
+        printf("Parent Process : True\n");
+        int status;
+        waitpid(pid, &status, 0);
+ 	
+      if (status != 0)
+	{
+	
+	    return false;
+	}
+	else
+	{
+	    return true;
+	}
+    }
+
+       
 
     va_end(args);
 
@@ -75,9 +128,11 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+ 
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -92,6 +147,52 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+
+   int kidpid;
+   int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+   if (fd < 0)
+    {
+    
+    perror("open");
+    return false; 
+    
+    }
+      int status;
+ switch (kidpid = fork()) 
+ {
+  case -1: perror("fork");
+   return false;
+
+
+  case 0:
+    if (dup2(fd, 1) < 0)
+     {
+     perror("dup2"); 
+    return false;
+     }
+    close(fd);
+   
+    
+     execv(command[0], command);
+     perror(command[0]);
+     exit(1);
+  default:
+       
+        waitpid(kidpid, &status, 0);
+ 	
+        if (WIFEXITED(status)) 
+        {
+            printf("Child process exited with status: %d\n", WEXITSTATUS(status));
+            
+        }
+        else
+        {
+            printf("Child process terminated abnormally\n");
+            return false;
+        }
+    /* do whatever the parent wants to do. */
+}
+
 
     va_end(args);
 
