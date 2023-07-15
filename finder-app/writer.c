@@ -5,7 +5,6 @@
 #include <sys/types.h>
 int main( int argc, char *argv[] )  {
 
-
      openlog("Logs",  LOG_PID,LOG_USER);
     
      syslog(LOG_INFO, "Start logging");
