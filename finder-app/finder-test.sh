@@ -8,6 +8,7 @@ set -u
 NUMFILES=10
 WRITESTR=AELD_IS_FUN
 WRITEDIR=/tmp/aeld-data
+#username=$(cat conf/username.txt)
 username=$(cat /etc/finder-app/conf/username.txt)
 FINDERRESULTFILE=/tmp/assignment4-result.txt
 
@@ -33,22 +34,26 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat /etc/finder-app/conf/assignment.txt`
+#
+# Since the directions for assignment 3 part 2 don't tell us to add
+# conf/assignment.txt to the rootfs, and we get an error on the
+# old line: assignment=`cat ../conf/assignment.txt`, I just decided
+# to remove this code that checks for the assignment number and
+# only creates $WRITEDIR on assignment 2 and later.  At this point,
+# the test is unnecessary, since we are always creating WRITEDIR.
+# I removed the reading of assignment.txt and the if/fi test.
+mkdir -p "$WRITEDIR"
 
-if [ $assignment != 'assignment1' ]
+#The WRITEDIR is in quotes because if the directory path consists of spaces, then variable substitution will consider it as multiple argument.
+#The quotes signify that the entire string in WRITEDIR is a single string.
+#This issue can also be resolved by using double square brackets i.e [[ ]] instead of using quotes.
+if [ -d "$WRITEDIR" ]
 then
-	mkdir -p "$WRITEDIR"
-
-	#The WRITEDIR is in quotes because if the directory path consists of spaces, then variable substitution will consider it as multiple argument.
-	#The quotes signify that the entire string in WRITEDIR is a single string.
-	#This issue can also be resolved by using double square brackets i.e [[ ]] instead of using quotes.
-	if [ -d "$WRITEDIR" ]
-	then
-		echo "$WRITEDIR created"
-	else
-		exit 1
-	fi
+	echo "$WRITEDIR created"
+else
+	exit 1
 fi
+
 #echo "Removing the old writer utility and compiling as a native application"
 #make clean
 #make
@@ -64,12 +69,12 @@ OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 rm -rf /tmp/aeld-data
 
 set +e
-echo ${OUTPUTSTRING} | grep "${MATCHSTR}" > /tmp/assignment4-result.txt
+echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 echo ${OUTPUTSTRING} > $FINDERRESULTFILE
 if [ $? -eq 0 ]; then
-	echo "success" >> /tmp/assignment4-result.txt
+	echo "success"
 	exit 0
 else
-	echo "failed: expected  ${MATCHSTR} in ${OUTPUTSTRING} but instead found" >> /tmp/assignment4-result.txt
+	echo "failed: expected  ${MATCHSTR} in ${OUTPUTSTRING} but instead found"
 	exit 1
 fi
