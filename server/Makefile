@@ -1,11 +1,18 @@
-CC ?= $(CROSS_COMPILE)gcc
-CFLAGS ?= -Wall -Werror -g
+CROSS_COMPILE?=aarch64-none-linux-gnu-
+# CROSS_COMPILE?=
+CC=$(CROSS_COMPILE)gcc
+CFLAGS ?= -Wall 
 LDFLAGS ?= -pthread
 
-all: aesdsocket
+SRC=aesdsocket.c
+OUTPUT=aesdsocket
+
+all: clean $(OUTPUT)
+
+aesdsocket: $(SRC)
+	$(CC) $(CFLAGS) -o $(OUTPUT) $(SRC) $(LDFLAGS)
 
 clean:
-	rm -f aesdsocket *.o
+	rm -f $(OUTPUT)
 
-aesdsocket: aesdsocket.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+export PATH := /home/ersin/Documents/arm-inst/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin:$(PATH)
