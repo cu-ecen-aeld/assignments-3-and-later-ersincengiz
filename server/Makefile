@@ -1,12 +1,11 @@
-ifeq ($(CROSS_COMPILE),aarch64-none-linux-gnu)
-	CC := aarch64-none-linux-gnu-gcc
-else
-	CC := gcc
-endif
+CC ?= $(CROSS_COMPILE)gcc
+CFLAGS ?= -Wall -Werror -g
+LDFLAGS ?= -pthread
+
+all: aesdsocket
+
+clean:
+	rm -f aesdsocket *.o
 
 aesdsocket: aesdsocket.o
-	${CC} aesdsocket.o -o aesdsocket
-aesdsocket.o:
-	${CC} -g -c -Wall -Werror aesdsocket.c -o aesdsocket.o
-clean:
-	-rm -f aesdsocket.o aesdsocket
+	$(CC) -o $@ $^ $(LDFLAGS)
