@@ -73,9 +73,6 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     // Girişi ekleyin
     buffer->entry[entry_index] = *add_entry;
 
-    // in_offs'u güncelle
-    buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
-
     // Tamponu doldurduysak, out_offs'u güncelle
     if ((buffer->in_offs == buffer->out_offs) && buffer->full )
     {
