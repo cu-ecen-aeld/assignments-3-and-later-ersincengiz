@@ -29,10 +29,29 @@
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
             size_t char_offset, size_t *entry_offset_byte_rtn )
 {
-    /**
-    * TODO: implement per description
-    */
-    return NULL;
+
+
+    
+     if (!(buffer->full) && (buffer->in_offs == buffer->out_offs))
+    {
+    	return NULL;
+    }
+    
+     uint8_t idx = buffer->out_offs;
+
+     while (buffer->entry[idx].size <= char_offset)
+    {
+	char_offset -= buffer->entry[out_offs].size;
+	idx = (buffer->out_offs + char_offset) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+        if (idx == buffer->in_offs)
+        {
+            return NULL;
+        }
+    }
+
+    *entry_offset_byte_rtn = char_offset;
+    return &(buffer->entry[idx]);
+ 
 }
 
 /**
@@ -44,9 +63,28 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
 */
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
-    /**
-    * TODO: implement per description
-    */
+    if (!buffer || !add_entry) {
+        return; // Geçersiz tampon veya giriş için işlem yapma
+    }
+
+    // İndeks hesaplaması yap
+    size_t entry_index = buffer->in_offs;
+
+    // Girişi ekleyin
+    buffer->entry[entry_index] = *add_entry;
+
+    // in_offs'u güncelle
+    buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+
+    // Tamponu doldurduysak, out_offs'u güncelle
+    if (buffer->full) {
+        buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    }
+
+    // Tamponu doldurmuş olabiliriz
+    if (buffer->in_offs == buffer->out_offs) {
+        buffer->full = true;
+    }
 }
 
 /**
