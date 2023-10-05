@@ -19,9 +19,9 @@
 
 #define TCP_PORT "9000"
 #define SOCKET_LISTEN_BACKLOG_NUMBER 5
-#define TEMP_FILE "/var/tmp/aesdsocketdata"
 #define MAX_READ_SIZE 1024
-
+#define USE_AESD_CHAR_DEVICE 1
+#define TEMP_FILE (USE_AESD_CHAR_DEVICE == 1) ? "/dev/aesdchar" : "/var/tmp/aesdsocketdata"
 int sockfd;
 
 struct LinkedList {
@@ -59,7 +59,10 @@ void signal_handler(int signum)
     server_is_running = false;
 		cleanup_socket(true);
 		close(sockfd);
-		remove(TEMP_FILE);
+		if (0 == USE_AESD_CHAR_DEVICE)
+		{
+			remove(TEMP_FILE);
+		}
 		syslog(LOG_DEBUG, "Killed aesdsocket");
 		exit(EXIT_SUCCESS);
 
