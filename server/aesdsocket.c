@@ -21,7 +21,9 @@
 #define SOCKET_LISTEN_BACKLOG_NUMBER 5
 #define MAX_READ_SIZE 1024
 #define USE_AESD_CHAR_DEVICE 1
-#define TEMP_FILE (USE_AESD_CHAR_DEVICE == 1) ? "/dev/aesdchar" : "/var/tmp/aesdsocketdata"
+
+
+const char* TEMP_FILE = (USE_AESD_CHAR_DEVICE == 1) ? "/dev/aesdchar" : "/var/tmp/aesdsocketdata";
 int sockfd;
 
 struct LinkedList {
