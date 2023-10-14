@@ -258,21 +258,21 @@ void *socket_thread(void *socket_param)
 			{
 				for (int i = 0; i<bytes_received;i++)
 				{
-					socket->msg[msg_len] = msg_buffer[i];
-					syslog(LOG_DEBUG, "current char %c", socket->msg[msg_len]);
+					socket->message[msg_len] = msg_buffer[i];
+					syslog(LOG_DEBUG, "current char %c", socket->message[msg_len]);
 					++msg_len;
-					if ('\n' == socket->msg[msg_len - 1])
+					if ('\n' == socket->message[msg_len - 1])
 					{
 						break;
 					}
 				}
 				pthread_mutex_lock(socket->mutex);
-				fp = fopen(TMP_FILE, "a+");
-				if (0 == strncmp(socket->msg, aesdchar_cmd, strlen(aesdchar_cmd)))
+				fp = fopen(TEMP_FILE, "a+");
+				if (0 == strncmp(socket->message, aesdchar_cmd, strlen(aesdchar_cmd)))
 				{
 					struct aesd_seekto seekto;
 					syslog(LOG_DEBUG, "aesdchar ioctl cmd received");
-					char *tmp = strchr(socket->msg, ':');
+					char *tmp = strchr(socket->message, ':');
 					sscanf(tmp,":%u,%u", &(seekto.write_cmd), &(seekto.write_cmd_offset));
 					syslog(LOG_DEBUG, "tmp char %s with offsets %u and %u", tmp, seekto.write_cmd, seekto.write_cmd_offset);
 					
@@ -281,8 +281,8 @@ void *socket_thread(void *socket_param)
 				else
 				{
 					syslog(LOG_DEBUG, "end of msg received");
-					syslog(LOG_DEBUG, "opened fp and writing msg %s with len %d", socket->msg, msg_len);
-					fwrite(socket->msg, sizeof(char), msg_len, fp);
+					syslog(LOG_DEBUG, "opened fp and writing msg %s with len %d", socket->message, msg_len);
+					fwrite(socket->message, sizeof(char), msg_len, fp);
 					syslog(LOG_DEBUG, "end of msg written to fp");
 					rewind(fp);
 					
@@ -291,7 +291,7 @@ void *socket_thread(void *socket_param)
 					msg_len = 0;
 					syslog(LOG_DEBUG, "msg send");
 				}
-				while ((bytes_read = fread(output_buffer, 1, MSG_BUFFER_SIZE, fp)) > 0)
+				while ((bytes_read = fread(output_buffer, 1, MAX_READ_SIZE, fp)) > 0)
 				{
 					send(socket->accepted_fd, output_buffer, bytes_read, 0);
 				}
