@@ -61,19 +61,24 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 	long retval = 0;
-	loff_t newpos;
+	loff_t newpos = 0;
 	mutex_lock_interruptible(&(dev->lock));
 	int curr_buffer_out_position = dev->buffer.out_offs;
 	int idx;
+    PDEBUG("aesd_ioctl: entering ioctl with cmd %u", cmd);  
+    PDEBUG("aesd_ioctl: current buffer position %d", curr_buffer_out_position);
 	if (AESDCHAR_IOCSEEKTO == cmd)
 	{
+        PDEBUG("aesd_ioctl: cmd recognized");
 		struct aesd_seekto seekto;
 		if (copy_from_user(&seekto, (const void __user *) arg, sizeof(seekto)) != 0)
 		{
+            PDEBUG("aesd_ioctl: cmd invalid");  
 			retval = -EFAULT;
 		}
 		else
 		{
+			PDEBUG("aesd_ioctl: recognized offsets %u and %u", seekto.write_cmd, seekto.write_cmd_offset);
 			if (AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED <= seekto.write_cmd)
 			{	
 				PDEBUG("aesd_ioctl: cmd %d out of range, must be between 0 and 9 ", seekto.write_cmd);
@@ -84,13 +89,14 @@ struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 				PDEBUG("aesd_ioctl: buffer at cmd %d empty", seekto.write_cmd);
 				retval = -EINVAL;
 			}
-			else if (dev->buffer.entry[(curr_buffer_out_position + seekto.write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size > seekto.write_cmd_offset)
+			else if (dev->buffer.entry[(curr_buffer_out_position + seekto.write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size < seekto.write_cmd_offset)
 			{
 				PDEBUG("aesd_ioctl: offset out of range");
 				retval = -EINVAL;
 			}
 			else
-			{	
+			{	PDEBUG("aesd_ioctl: cmd received with offsets %u and %u", seekto.write_cmd, seekto.write_cmd_offset);
+            	PDEBUG("aesd_ioctl: old file_pos %lld", filp->f_pos);   
 				for (idx = 0; idx < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; idx++)
 				{
 					if (((idx + curr_buffer_out_position) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED) == seekto.write_cmd)
@@ -103,6 +109,7 @@ struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 					}
 				}
 				filp->f_pos = newpos;
+                PDEBUG("aesd_ioctl: new file_pos %lld and newpos %lld", filp->f_pos, newpos);
 			}
 		}
 	}

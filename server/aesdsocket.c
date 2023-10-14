@@ -266,6 +266,8 @@ void *socket_thread(void *socket_param)
 						break;
 					}
 				}
+				pthread_mutex_lock(socket->mutex);
+				fp = fopen(TMP_FILE, "a+");
 				if (0 == strncmp(socket->msg, aesdchar_cmd, strlen(aesdchar_cmd)))
 				{
 					struct aesd_seekto seekto;
@@ -273,26 +275,28 @@ void *socket_thread(void *socket_param)
 					char *tmp = strchr(socket->msg, ':');
 					sscanf(tmp,":%u,%u", &(seekto.write_cmd), &(seekto.write_cmd_offset));
 					syslog(LOG_DEBUG, "tmp char %s with offsets %u and %u", tmp, seekto.write_cmd, seekto.write_cmd_offset);
-					ioctl(socket->accepted_fd, AESDCHAR_IOCSEEKTO, &seekto);
+					
+					ioctl(fileno(fp), AESDCHAR_IOCSEEKTO, &seekto);
 				}
 				else
 				{
 					syslog(LOG_DEBUG, "end of msg received");
-					pthread_mutex_lock(socket->mutex);
-					fp = fopen(TMP_FILE, "a+");
 					syslog(LOG_DEBUG, "opened fp and writing msg %s with len %d", socket->msg, msg_len);
 					fwrite(socket->msg, sizeof(char), msg_len, fp);
 					syslog(LOG_DEBUG, "end of msg written to fp");
 					rewind(fp);
-					while ((bytes_read = fread(output_buffer, 1, MSG_BUFFER_SIZE, fp)) > 0)
-					{
-						send(socket->accepted_fd, output_buffer, bytes_read, 0);
-					}
-					fclose(fp);
-					pthread_mutex_unlock(socket->mutex);
+					
+
+
 					msg_len = 0;
 					syslog(LOG_DEBUG, "msg send");
 				}
+				while ((bytes_read = fread(output_buffer, 1, MSG_BUFFER_SIZE, fp)) > 0)
+				{
+					send(socket->accepted_fd, output_buffer, bytes_read, 0);
+				}
+				fclose(fp);
+				pthread_mutex_unlock(socket->mutex);	
 
 				syslog(LOG_DEBUG, "aesdsocket: msg complete");
 			}
