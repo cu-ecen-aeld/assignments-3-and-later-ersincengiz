@@ -16,6 +16,8 @@
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
+#include "aesd_ioctl.h"
+
 
 #define TCP_PORT "9000"
 #define SOCKET_LISTEN_BACKLOG_NUMBER 5
@@ -227,6 +229,8 @@ void *socket_thread(void *socket_param)
 	bool is_receiving_message = true;
 	FILE *fp;
 	
+	const char *aesdchar_cmd = "AESDCHAR_IOCSEEKTO:";
+	
 	syslog(LOG_DEBUG, "aesdsocket in connection: variables assigned");
 	
 	while (is_receiving_message)
@@ -254,23 +258,43 @@ void *socket_thread(void *socket_param)
 			{
 				for (int i = 0; i<bytes_received;i++)
 				{
-					socket->message[msg_len] = msg_buffer[i];
+					socket->msg[msg_len] = msg_buffer[i];
+					syslog(LOG_DEBUG, "current char %c", socket->msg[msg_len]);
 					++msg_len;
-					if (msg_buffer[i] == '\n')
+					if ('\n' == socket->msg[msg_len - 1])
 					{
-						pthread_mutex_lock(socket->mutex);
-						fp = fopen(TEMP_FILE, "a+");
-						fwrite(socket->message, sizeof(char), msg_len, fp);
-						rewind(fp);
-						while ((bytes_read = fread(output_buffer, 1, MAX_READ_SIZE, fp)) > 0)
-						{
-							send(socket->accepted_fd, output_buffer, bytes_read, 0);
-						}
-						fclose(fp);
-						pthread_mutex_unlock(socket->mutex);
-						msg_len = 0;
+						break;
 					}
 				}
+				if (0 == strncmp(socket->msg, aesdchar_cmd, strlen(aesdchar_cmd)))
+				{
+					struct aesd_seekto seekto;
+					syslog(LOG_DEBUG, "aesdchar ioctl cmd received");
+					char *tmp = strchr(socket->msg, ':');
+					sscanf(tmp,":%u,%u", &(seekto.write_cmd), &(seekto.write_cmd_offset));
+					syslog(LOG_DEBUG, "tmp char %s with offsets %u and %u", tmp, seekto.write_cmd, seekto.write_cmd_offset);
+					ioctl(socket->accepted_fd, AESDCHAR_IOCSEEKTO, &seekto);
+				}
+				else
+				{
+					syslog(LOG_DEBUG, "end of msg received");
+					pthread_mutex_lock(socket->mutex);
+					fp = fopen(TMP_FILE, "a+");
+					syslog(LOG_DEBUG, "opened fp and writing msg %s with len %d", socket->msg, msg_len);
+					fwrite(socket->msg, sizeof(char), msg_len, fp);
+					syslog(LOG_DEBUG, "end of msg written to fp");
+					rewind(fp);
+					while ((bytes_read = fread(output_buffer, 1, MSG_BUFFER_SIZE, fp)) > 0)
+					{
+						send(socket->accepted_fd, output_buffer, bytes_read, 0);
+					}
+					fclose(fp);
+					pthread_mutex_unlock(socket->mutex);
+					msg_len = 0;
+					syslog(LOG_DEBUG, "msg send");
+				}
+
+				syslog(LOG_DEBUG, "aesdsocket: msg complete");
 			}
 		}
 	}
