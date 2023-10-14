@@ -102,11 +102,13 @@ struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 					if (((idx + curr_buffer_out_position) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED) == seekto.write_cmd)
 					{
 						newpos += seekto.write_cmd_offset;
+                        break;
 					}
 					else
 					{
 						newpos += dev->buffer.entry[(curr_buffer_out_position + idx) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
-					}
+                        PDEBUG("aesd_ioctl: newpos %lld at buffer position %d", newpos, idx + curr_buffer_out_position);
+                	}
 				}
 				filp->f_pos = newpos;
                 PDEBUG("aesd_ioctl: new file_pos %lld and newpos %lld", filp->f_pos, newpos);
